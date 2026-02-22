@@ -1,59 +1,175 @@
-in this we are going to crea et a bank system backedn 
-register login 
-email send to ogin person who juts login
+# 🏦 Banking Backend System (Node.js + Express + MongoDB)
 
-first 
-user schema  in models 
-email name password ycrypt using bcrypt function 
+This project is a backend implementation of a basic banking system built using **Node.js**, **Express**, and **MongoDB**.
+It includes secure authentication, account management, transaction processing, and a ledger system to maintain financial records.
 
-now first find one using enmail if eist error if not 
-then create a user using(UserModel.create)
-and then compare password 
+---
+## 📌 Features
 
-/Now for the authetication we 
-first create a user using signin route then 
+* User Registration & Login
+* Secure Password Hashing using bcrypt
+* Email Notification on Login (Nodemailer + Gmail API)
+* Account Creation per User
+* Double Entry Ledger System
+* Transaction Processing
+* Idempotency Handling (Prevents Duplicate Transactions)
+* Indexed Account Lookup for Scalability
 
-login Route 
+---
 
-next task is to send a email to the remail by which use ris register(now we use nodemailer)
-use google ai then gmaail api 
+## 👤 User Module
 
-donee email by nodemailer
-now we use accounts 
-we have to make a account schema which have user by which account is created 
-user status currency and index we use to find when the number of user increasae
+The system allows users to register and log in securely.
 
-now we use leager 
-lets talk about what us ledger it keeps record of trasaction payemntts and evything related 
-ledger wants 
-source destination 
-ammout 
-idempotency key which is geerated at once and never used after teh transacin complete(
-    same reuqest never be eecuted by two time like 
-    if  some server slow down no transaction repeated 
-)
-Staus we store panding at the satrt
+### User Schema
 
-what is the ledger it is srt of  regitser stores  information about user account when data how much and from where
-legder for A user
+The user model contains the following fields:
+
+* **Name**
+* **Email**
+* **Password** (Hashed using bcrypt before storing)
+
+During registration:
+
+1. The system first checks if a user with the given email already exists.
+2. If the email exists → an error is returned.
+3. If not → a new user is created using:
+
+```js
+UserModel.create()
+```
+
+During login:
+
+* The entered password is compared with the hashed password stored in the database using bcrypt.
+
+---
+
+## 🔐 Authentication
+
+Authentication is handled using:
+
+* **Signup Route** → Registers a new user
+* **Login Route** → Authenticates an existing user
+
+Upon successful login, an email notification is sent to the registered email address using **Nodemailer** configured with the **Gmail API**.
+
+---
+
+## 🏦 Account Module
+
+Each registered user is assigned a bank account.
+
+### Account Schema includes:
+
+* User Reference (Owner of the Account)
+* Currency
+* Account Status
+* Indexed User ID (for faster lookup as the number of users increases)
+
+Indexing ensures efficient querying and better performance as the system scales.
+
+---
+
+## 📒 Ledger System
+
+The ledger is responsible for maintaining a permanent record of all financial transactions.
+
+It records:
+
+* Source Account
+* Destination Account
+* Transaction Amount
+* Transaction Status
+* Idempotency Key
+
+---
+
+### 🔁 Idempotency Key
+
+Each transaction is assigned a unique **Idempotency Key** which:
+
+* Is generated once per transaction
+* Cannot be reused
+* Ensures the same transaction request is never executed more than once
+
+This prevents duplicate transactions in cases such as:
+
+* Network retries
+* Server delays
+* Timeout failures
+
+---
+
+## 💸 Double Entry Ledger
+
+For every transaction:
+
+### Debit Entry (Source Account)
+
+```json
 {
-account A
-ammount 100
-type debit
+  "account": "User A",
+  "amount": 100,
+  "type": "debit"
 }
+```
 
-ledger for destinaton
+### Credit Entry (Destination Account)
+
+```json
 {
-account user b 
-ammount 100
-type crdit }
-now we chnage the status to make comlete
-if one of the following thigs failed nothing will happer
-now we have write the ledger scheeema for our transaction now we want to do wirte a bussniess logic
+  "account": "User B",
+  "amount": 100,
+  "type": "credit"
+}
+```
 
-we have created a controller in which we have
-his controller handles the creation of transactions and the associated ledger entries.
- * validate reques
- * validate idempotency key
- * creeate accuntstatus
- now we want to derive account balnace from source 
+Transaction status is initially stored as:
+
+```
+pending
+```
+
+Once both ledger entries are successfully created, the status is updated to:
+
+```
+completed
+```
+
+If any part of the transaction fails, the entire process is rolled back and no changes are committed.
+
+---
+
+## 🧠 Transaction Controller
+
+The transaction controller handles:
+
+* Request Validation
+* Idempotency Key Validation
+* Account Status Verification
+* Ledger Entry Creation
+* Deriving Account Balance from Source Account
+
+All account balances are calculated using ledger entries to ensure accuracy and consistency.
+
+---
+
+## ⚙️ Tech Stack
+
+* Node.js
+* Express.js
+* MongoDB
+* Mongoose
+* bcrypt
+* Nodemailer
+* Gmail API
+
+---
+
+## 📈 Scalability Considerations
+
+* Indexed account lookup for large user bases
+* Ledger-based balance calculation
+* Idempotent transaction processing
+* Atomic transaction flow
